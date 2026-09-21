@@ -23,9 +23,8 @@
       radial-gradient(900px 600px at 12% -5%, rgba(41,83,163,.18), transparent 60%),
       radial-gradient(800px 600px at 112% 112%, rgba(227,115,163,.16), transparent 55%), #0c0d11;
   }
-  @media (max-width:900px){ body{flex-direction:column; gap:22px; padding:16px;} }
 
-  /* rail */
+  /* rail (desktop instructions only) */
   .rail{width:280px; max-width:92vw;}
   .rail h1{font-size:25px; line-height:1.1; margin:0 0 4px; letter-spacing:-.02em; font-weight:800;}
   .rail .sub{font-size:12.5px; color:#9aa0ad; margin:0 0 18px; line-height:1.5;}
@@ -41,17 +40,37 @@
   .stage.on{color:var(--paper);}
   .stage .fork{margin-left:auto; font-size:9.5px; color:var(--pink); font-weight:700;}
 
-  /* phone */
-  .phone{width:390px; height:812px; max-width:96vw; border-radius:52px; flex:none;
-    background:#000; padding:13px; box-shadow:0 40px 90px rgba(0,0,0,.55), 0 0 0 2px rgba(255,255,255,.06); position:relative;}
-  .screen{position:relative; width:100%; height:100%; border-radius:40px; overflow:hidden; background:#e8ebee; display:flex; flex-direction:column;}
+  /* DESKTOP: framed phone-sized preview */
+  .phone{width:390px; height:min(812px,92vh); max-width:96vw; border-radius:44px; flex:none;
+    background:#000; padding:11px; box-shadow:0 40px 90px rgba(0,0,0,.55), 0 0 0 2px rgba(255,255,255,.06); position:relative;}
+  .screen{position:relative; width:100%; height:100%; border-radius:34px; overflow:hidden; background:#e8ebee; display:flex; flex-direction:column;}
   .notch{position:absolute; top:0; left:50%; transform:translateX(-50%); width:150px; height:30px; background:#000; border-radius:0 0 18px 18px; z-index:1200;}
   .statusbar{position:absolute; top:0; left:0; right:0; height:50px; z-index:1150; display:flex; align-items:flex-end;
     justify-content:space-between; padding:0 26px 6px; font-size:13px; font-weight:600; color:var(--ink); pointer-events:none;
     text-shadow:0 1px 2px rgba(255,255,255,.6);}
 
-  #map{position:absolute; inset:0; z-index:1; background:#e8ebee;}
-  .leaflet-container{background:#e8ebee; font-family:inherit;}
+  /* MOBILE / REAL USE: the app IS the screen — no frame, no rail, no chrome */
+  @media (max-width:900px){
+    body{display:block; padding:0; gap:0; min-height:100dvh; background:#e8ebee;}
+    .rail{display:none;}
+    .phone{width:100%; height:100dvh; max-width:none; border-radius:0; padding:0; box-shadow:none; background:#e8ebee;}
+    .screen{border-radius:0;}
+    .notch{display:none;}
+    /* keep the status bar clear of the device's real status bar via safe-area */
+    .statusbar{height:calc(env(safe-area-inset-top,0px) + 8px); padding-bottom:0;}
+    .statusbar span{display:none;}         /* hide fake clock/battery on real device */
+    .searchpill{top:calc(env(safe-area-inset-top,8px) + 8px);}
+    .notif{top:calc(env(safe-area-inset-top,8px) + 8px);}
+    .sheet{border-radius:22px 22px 0 0; padding-bottom:calc(env(safe-area-inset-bottom,0px) + 20px); max-height:56%;}
+  }
+
+  #map{position:absolute; inset:0; z-index:1; background:#e8eaed;}
+  .leaflet-container{background:#e8eaed; font-family:inherit;}
+  /* nudge OSM tiles toward Google Maps' lighter, cleaner tone */
+  .leaflet-tile-pane{filter:saturate(.72) brightness(1.05) contrast(.96);}
+  .leaflet-control-attribution{font-size:9px !important; background:rgba(255,255,255,.7) !important;}
+  .leaflet-bar{border:none !important; box-shadow:0 1px 4px rgba(0,0,0,.25) !important;}
+  .leaflet-bar a{background:#fff !important; color:#5f6368 !important; border-bottom:1px solid #e8eaed !important; font-weight:600 !important;}
 
   /* search pill */
   .searchpill{position:absolute; top:58px; left:14px; right:14px; z-index:1100; height:44px; background:#fff; border-radius:24px;
@@ -281,7 +300,7 @@ const ARRIVE_RADIUS=25;   // metres: within this of the next stop => "arrived", 
 const map=L.map('map',{zoomControl:false,attributionControl:true}).setView([STOPS[0].lat,STOPS[0].lng],18);
 L.control.zoom({position:'bottomright'}).addTo(map);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-  maxZoom:19, attribution:'© OpenStreetMap'
+  maxZoom:19, detectRetina:true, attribution:'© OpenStreetMap'
 }).addTo(map);
 
 /* icons */
@@ -510,6 +529,8 @@ $('gmapsBtn').addEventListener('click',()=>{
 function tick(){$('clock').textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:false});}
 setInterval(tick,10000); tick();
 setTimeout(()=>map.invalidateSize(),200);
+window.addEventListener('resize',()=>map.invalidateSize());
+window.addEventListener('orientationchange',()=>setTimeout(()=>map.invalidateSize(),300));
 render();
 </script>
 </body>
